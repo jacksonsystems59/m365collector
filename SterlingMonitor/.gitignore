@@ -1,9 +1,0 @@
-**/bin/
-**/obj/
-release/
-.vs/
-*.user
-*.pfx
-*.pem
-settings.json
-activity.log*
