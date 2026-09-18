@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+release/
+.vs/
+*.user
+*.pfx
+*.pem
+settings.json
+activity.log*
+
+# Local SterlingMonitor release artifacts (executables, ZIPs, and release copies)
+/SterlingMonitor/dist/

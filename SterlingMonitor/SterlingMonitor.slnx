@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SterlingMonitor/SterlingMonitor.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SterlingMonitor.Tests/SterlingMonitor.Tests.csproj" />
+  </Folder>
+</Solution>
