@@ -10,3 +10,11 @@ activity.log*
 
 # Local SterlingMonitor release artifacts (executables, ZIPs, and release copies)
 /SterlingMonitor/dist/
+
+# M365Collector generated packages and local runtime data
+/dist/
+TestResults/
+*.db
+*.db-shm
+*.db-wal
+*.pdb

@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../M365Collector.Contracts/M365Collector.Contracts.csproj" /></ItemGroup></Project>

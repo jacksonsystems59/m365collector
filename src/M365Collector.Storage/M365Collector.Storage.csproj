@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../M365Collector.Core/M365Collector.Core.csproj" /><PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" /></ItemGroup></Project>

@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="../M365Collector.Core/M365Collector.Core.csproj" /><ProjectReference Include="../M365Collector.Security/M365Collector.Security.csproj" /><PackageReference Include="Microsoft.Identity.Client" Version="4.90.0" /></ItemGroup></Project>
