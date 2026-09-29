@@ -20,33 +20,6 @@
           "SQLitePCLRaw.core": "2.1.12"
         }
       },
-      "Microsoft.Identity.Client": {
-        "type": "Transitive",
-        "resolved": "4.90.0",
-        "contentHash": "oc5A0jmu083T3OW1JVYMrM1rekIL8SkBRB/byMMQjFuYlRZsMh3wDeCwwrz9sGI6XlP5BIqO7XWgjPpF3reF5A==",
-        "dependencies": {
-          "Microsoft.IdentityModel.Abstractions": "8.14.0"
-        }
-      },
-      "Microsoft.Identity.Client.Broker": {
-        "type": "Transitive",
-        "resolved": "4.90.0",
-        "contentHash": "A5FUu7EmSQYyEEvtng6qoF3uhS77ZG+fPvOEQl7gY5tWMCOZU9KME10nE+onpIR5fVjzX7jFPNrLZiTYwyGtkA==",
-        "dependencies": {
-          "Microsoft.Identity.Client": "4.90.0",
-          "Microsoft.Identity.Client.NativeInterop": "0.20.6"
-        }
-      },
-      "Microsoft.Identity.Client.NativeInterop": {
-        "type": "Transitive",
-        "resolved": "0.20.6",
-        "contentHash": "noyfdMfVxyWpM6xUDmlW6gUvZ5ci24z7Qoy15JvynTQfZV5vTD2NEdsnT5Gy4ngViwgdIp5iRjRy10jAKXFAgw=="
-      },
-      "Microsoft.IdentityModel.Abstractions": {
-        "type": "Transitive",
-        "resolved": "8.14.0",
-        "contentHash": "iwbCpSjD3ehfTwBhtSNEtKPK0ICun6ov7Ibx6ISNA9bfwIyzI2Siwyi9eJFCJBwxowK9xcA1mj+jBWiigeqgcQ=="
-      },
       "SQLite": {
         "type": "Transitive",
         "resolved": "3.53.4",
@@ -110,15 +83,6 @@
           "System.ServiceProcess.ServiceController": "[10.0.12, )"
         }
       },
-      "m365collector.entra": {
-        "type": "Project",
-        "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
-          "M365Collector.Security": "[0.0.1, )",
-          "Microsoft.Identity.Client": "[4.90.0, )",
-          "Microsoft.Identity.Client.Broker": "[4.90.0, )"
-        }
-      },
       "m365collector.security": {
         "type": "Project",
         "dependencies": {
@@ -137,11 +101,6 @@
       }
     },
     "net10.0-windows7.0/win-x64": {
-      "Microsoft.Identity.Client.NativeInterop": {
-        "type": "Transitive",
-        "resolved": "0.20.6",
-        "contentHash": "noyfdMfVxyWpM6xUDmlW6gUvZ5ci24z7Qoy15JvynTQfZV5vTD2NEdsnT5Gy4ngViwgdIp5iRjRy10jAKXFAgw=="
-      },
       "SQLite": {
         "type": "Transitive",
         "resolved": "3.53.4",

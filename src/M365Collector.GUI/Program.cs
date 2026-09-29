@@ -1,40 +1,25 @@
-using M365Collector.Contracts;
 using M365Collector.Core;
-using M365Collector.Security;
-
+using M365Collector.Storage;
 namespace M365Collector.GUI;
-
 internal static class Program
 {
     [STAThread]
-    private static void Main()
+    static void Main()
     {
         ApplicationConfiguration.Initialize();
         try
         {
-            WindowsSecurity.RequireAdministrator();
-            var root = InstallationRegistry.DataRoot;
-            var state = SetupDetection.Detect(root);
-            if (state == SetupState.Broken)
-                throw new InvalidDataException("The registered runtime is missing, damaged or uses an unsupported schema. Restore its configuration/database at the registered DataRoot. Setup will not silently replace customer data.");
-            RuntimeConfig config;
-            var firstRun = state != SetupState.Complete;
-            if (firstRun)
+            if (Mutex.TryOpenExisting(@"Global\M365Collector.Update", out var update)) { update.Dispose(); MessageBox.Show("An update or recovery is in progress. Reopen M365Collector when it finishes."); return; }
+            using var single = new Mutex(true, @"Global\M365Collector.GUI", out var owns); if (!owns) return;
+            if (InstallationState.IsFirstRun(InstallationState.Locator))
             {
-                using var wizard = new FirstRunWizard(root);
-                if (wizard.ShowDialog() != DialogResult.OK || wizard.CompletedConfig == null) return;
-                config = wizard.CompletedConfig;
+                using var wizard = new FirstRunWizard(); if (wizard.ShowDialog() != DialogResult.OK) return;
             }
-            else config = new ConfigurationStore(new RuntimePaths(root!)).Load();
-            if (config.InstalledVersion != ProductInfo.Version)
-                throw new InvalidOperationException("This executable does not match the installed version. Launch M365Collector from " + config.InstallRoot);
-            new StructuredLog(new RuntimePaths(config.DataRoot), "gui").Write("ApplicationStartup", "Success");
-            Application.Run(new MainForm(config, firstRun));
+            var installation = JsonFile.Read<Installation>(InstallationState.Locator);
+            var store = new CollectorStore(new RuntimePaths(installation.DataRoot).Database); store.Verify();
+            using var login = new LoginForm(store); if (login.ShowDialog() != DialogResult.OK || login.User == null) return;
+            Application.Run(new MainForm(installation, store, login.User));
         }
-        catch (Exception exception)
-        {
-            // Startup/configuration failures contain no Microsoft token responses.
-            MessageBox.Show(exception.Message, "M365Collector " + ProductInfo.Version + " — unable to start", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
+        catch (Exception error) { MessageBox.Show(error.Message, "M365Collector could not start", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
 }

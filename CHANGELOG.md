@@ -1,16 +1,14 @@
 # Changelog
 
-## 0.1.0 — foundation implementation (unreleased)
+## 0.0.1 — 2026-09-29
 
-- Added a separate M365Collector solution; existing SterlingMonitor sources are unchanged.
-- Added portable self-contained bootstrap and multi-stage Windows first-run wizard.
-- Added configurable protected DataRoot, registry-based setup discovery and independent Windows Service installation.
-- Added SQLite repositories, transactional schema migration ledger, service job queue and tenant-separated identity snapshots.
-- Added customer Draft/Active lifecycle, manual and guided Entra onboarding, machine certificates and service-side connection validation.
-- Added least-permission Tenant Identity collector, per-customer module selection and explicit future collector/navigation placeholders.
-- Added Windows administrator authentication, separate authorisation policy and structured safe-code logging.
-- Made version 0.1.0 visible in the UI and discoverable through metadata, release manifest, registry and service CLI/health.
-- Added upgrade-ready binary/data separation, explicit backup/migration/health commands and deterministic asset naming. No automatic update/download/install workflow.
-- Added credential-free automated tests, release packaging and manual Windows/Entra acceptance checklist.
+- Clean rebuild replacing the abandoned prototype, preserving repository identity and history.
+- Self-contained First Run Wizard, dependency checks, configurable protected DataRoot and independent Windows Service.
+- SQLite repositories, versioned migrations, local password authentication and Administrator/Operator/Read Only roles.
+- Simplified customer onboarding with Microsoft-controlled WAM/system-browser authentication, configurable bootstrap public client, Graph provisioning, guided Connect-MgGraph and manual setup.
+- Per-tenant non-exportable machine certificates, public CER export and service-side app-only verification.
+- Tenant Identity collector, hourly service scheduling, modular manifests and honest placeholders for future collectors/Audit Explorer/Reports.
+- Public GitHub release checks, semantic versions, conditional caching, explicit update approval, secure staging, SHA-256 and manifest checks, separate service-aware updater, rollback and interrupted-update recovery.
+- Credential-free automated tests and Windows release packaging.
 
-Release remains gated on successful elevated Windows service/certificate and live test-tenant acceptance, source review/commit/push and publishing confirmation.
+This release does not migrate prototype databases or implement large Microsoft 365 workload collectors. Automatic Microsoft sign-in requires an organisation-configured bootstrap application. Live tenant/SCM acceptance is separate from automated tests.

@@ -1,47 +1,35 @@
-[CmdletBinding()]
 param([switch]$SkipTests)
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-Set-Location -LiteralPath $repoRoot
-$remote = & git remote get-url origin
-if ($LASTEXITCODE -ne 0 -or $remote -notmatch 'github\.com[:/]jacksonsystems59/m365collector(?:\.git)?$') { throw 'Wrong repository remote. Build stopped.' }
-$version = '0.1.0'
-function Invoke-DotNet([string[]]$Arguments) {
-    & dotnet @Arguments
-    if ($LASTEXITCODE -ne 0) { throw ('dotnet failed: ' + ($Arguments -join ' ')) }
-}
-Invoke-DotNet @('clean','M365Collector.sln','-c','Release','--nologo')
-Invoke-DotNet @('restore','M365Collector.sln','--locked-mode')
-Invoke-DotNet @('build','M365Collector.sln','-c','Release','--no-restore','--nologo')
-if (-not $SkipTests) { Invoke-DotNet @('test','M365Collector.sln','-c','Release','--no-build','--logger','trx;LogFileName=release.trx') }
-$distRoot = Join-Path $repoRoot 'dist'
-New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
-$packageRoot = Join-Path $distRoot "M365Collector-$version-win-x64"
-if (Test-Path -LiteralPath $packageRoot) {
-    $resolvedPackage = [IO.Path]::GetFullPath($packageRoot)
-    $resolvedDist = [IO.Path]::GetFullPath($distRoot).TrimEnd('\') + '\'
-    if (-not $resolvedPackage.StartsWith($resolvedDist,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe package cleanup target.' }
-    Remove-Item -LiteralPath $resolvedPackage -Recurse -Force
-}
-Invoke-DotNet @('publish','src/M365Collector.GUI/M365Collector.GUI.csproj','-c','Release','-r','win-x64','--self-contained','true','-p:RestoreLockedMode=true','-p:PublishSingleFile=false','-p:DebugType=None','-p:DebugSymbols=false','-o',$packageRoot)
-Invoke-DotNet @('publish','src/M365Collector.Service/M365Collector.Service.csproj','-c','Release','-r','win-x64','--self-contained','true','-p:RestoreLockedMode=true','-p:PublishSingleFile=false','-p:DebugType=None','-p:DebugSymbols=false','-o',(Join-Path $packageRoot 'service'))
-Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md') -Destination $packageRoot
-Copy-Item -LiteralPath (Join-Path $repoRoot 'CHANGELOG.md') -Destination $packageRoot
-Copy-Item -LiteralPath (Join-Path $repoRoot 'docs') -Destination $packageRoot -Recurse
-$files = @(Get-ChildItem -LiteralPath $packageRoot -Recurse -File | Sort-Object FullName | ForEach-Object {
-    @{ path = [IO.Path]::GetRelativePath($packageRoot,$_.FullName).Replace('\','/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
-})
-$manifest = [ordered]@{ schemaVersion=1; product='M365Collector'; version=$version; runtimeIdentifier='win-x64'; guiExecutable='M365Collector.exe'; serviceExecutable='service/M365Collector.Service.exe'; configSchema=1; databaseSchema=1; files=$files }
-$manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $packageRoot 'release.json') -Encoding utf8
-& (Join-Path $packageRoot 'service/M365Collector.Service.exe') --verify-package $packageRoot
-if ($LASTEXITCODE -ne 0) { throw 'Published package failed manifest verification.' }
-$versionResult = & (Join-Path $packageRoot 'service/M365Collector.Service.exe') --version | ConvertFrom-Json
-if ($LASTEXITCODE -ne 0 -or $versionResult.version -ne $version) { throw 'Published service version does not match the asset version.' }
-$asset = Join-Path $distRoot "M365Collector-$version-win-x64.zip"
-if (Test-Path -LiteralPath $asset) { Remove-Item -LiteralPath $asset -Force }
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-[IO.Compression.ZipFile]::CreateFromDirectory($packageRoot,$asset,[IO.Compression.CompressionLevel]::Optimal,$false)
-$hash = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
-"$hash  $([IO.Path]::GetFileName($asset))" | Set-Content -LiteralPath ($asset + '.sha256') -Encoding ascii
-Write-Output "Validation package: $asset"
-Write-Output 'Publishing is separate. Complete Windows/Entra acceptance, commit/push matching source, and obtain confirmation before publishing.'
+Push-Location $repoRoot
+try {
+    function Invoke-Dotnet([string[]]$Arguments) {
+        & dotnet @Arguments
+        if ($LASTEXITCODE -ne 0) { throw "dotnet failed: $Arguments" }
+    }
+    Invoke-Dotnet -Arguments @('clean','M365Collector.sln','-c','Release','--nologo')
+    Invoke-Dotnet -Arguments @('restore','M365Collector.sln','--locked-mode')
+    Invoke-Dotnet -Arguments @('build','M365Collector.sln','-c','Release','--no-restore','--nologo','-warnaserror')
+    if (-not $SkipTests) { Invoke-Dotnet -Arguments @('test','M365Collector.sln','-c','Release','--no-build','--nologo','--logger','trx;LogFileName=release-tests.trx') }
+    $stagingPath = Join-Path $repoRoot ('dist\package-' + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $stagingPath -Force | Out-Null
+    foreach ($component in @('GUI','Service','Updater')) {
+        Invoke-Dotnet -Arguments @('publish',"src\M365Collector.$component\M365Collector.$component.csproj",'-c','Release','-r','win-x64','--self-contained','true','-p:PublishSingleFile=false','-p:DebugType=None','-p:DebugSymbols=false','-o',(Join-Path $stagingPath $component),'--nologo')
+    }
+    $manifestFiles = [ordered]@{}
+    foreach ($file in (Get-ChildItem -LiteralPath $stagingPath -File -Recurse | Sort-Object FullName)) {
+        $relative = [IO.Path]::GetRelativePath($stagingPath, $file.FullName).Replace('\','/')
+        if ($file.Extension -notin @('.exe','.dll','.json','.config','.xml','.pri','.dat')) { throw "Unexpected release file: $relative" }
+        $manifestFiles[$relative] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
+    @{version='0.0.1';files=$manifestFiles} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $stagingPath 'package.json') -Encoding utf8NoBOM
+    $zipPath = Join-Path $repoRoot 'dist\M365Collector-0.0.1-win-x64.zip'
+    # Only the explicitly named generated ZIP is replaced. No recursive deletion.
+    if (Test-Path -LiteralPath $zipPath) { [IO.File]::Delete($zipPath) }
+    [IO.Compression.ZipFile]::CreateFromDirectory($stagingPath,$zipPath,[IO.Compression.CompressionLevel]::Optimal,$false)
+    $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    "$hash  $([IO.Path]::GetFileName($zipPath))" | Set-Content -LiteralPath ($zipPath + '.sha256') -Encoding ascii
+    Write-Output "Package directory: $stagingPath"
+    Get-Item -LiteralPath $zipPath,($zipPath + '.sha256') | Select-Object Name,Length
+} finally { Pop-Location }

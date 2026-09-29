@@ -1,128 +1,79 @@
-using M365Collector.Contracts;
 using M365Collector.Core;
+using M365Collector.Contracts;
 using M365Collector.Security;
 using M365Collector.Storage;
-
 namespace M365Collector.GUI;
-
-public sealed class FirstRunWizard : Form
+internal sealed class FirstRunWizard : Form
 {
-    private static readonly string[] Steps = ["Welcome", "System requirements", "Dependency check", "Data storage", "Runtime structure", "Windows service", "Application security", "Setup verification"];
-    private readonly ListBox navigation = new() { Dock = DockStyle.Left, Width = 235, BorderStyle = BorderStyle.None, BackColor = Ui.Navy, ForeColor = Color.White, ItemHeight = 46, DrawMode = DrawMode.OwnerDrawFixed, Enabled = false };
-    private readonly Panel body = new() { Dock = DockStyle.Fill };
-    private readonly Button back = Ui.Button("Back"), next = Ui.Button("Next", primary: true), cancel = Ui.Button("Cancel");
+    private static readonly string[] Steps = ["Welcome", "System Requirements", "Dependency Check", "Data Location", "Runtime Structure Creation", "Windows Service Installation", "Local Application Security", "Setup Verification", "Add First Customer"];
+    private readonly FlowLayoutPanel page = Ui.Stack();
     private readonly Label status = Ui.Text("");
-    private readonly CancellationTokenSource lifetime = new();
-    private RuntimeConfig? config;
-    private string root;
-    private int step;
-    private bool dependenciesPassed, storageChecked, busy;
-    private IReadOnlyList<DependencyResult> dependencyResults = [];
-    public RuntimeConfig? CompletedConfig { get; private set; }
-
-    public FirstRunWizard(string? existingRoot = null)
+    private readonly Button next, back, cancel;
+    private int step; private bool busy; private string dataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "M365Collector");
+    private TextBox? data, username, password, confirm;
+    public FirstRunWizard()
     {
-        Text = "M365Collector " + ProductInfo.Version + " | First Run"; Width = 1180; Height = 820; MinimumSize = new Size(1000, 700);
-        StartPosition = FormStartPosition.CenterScreen; Font = new Font("Segoe UI", 10); BackColor = Ui.Canvas;
-        root = existingRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "M365Collector");
-        if (existingRoot != null) config = new ConfigurationStore(new RuntimePaths(existingRoot)).Load();
-        foreach (var (name, index) in Steps.Select((name,index)=>(name,index))) navigation.Items.Add($"{index+1:00}   {name}");
-        navigation.DrawItem += (_, e) => { if(e.Index<0)return; using var brush=new SolidBrush(e.Index == step ? Ui.Teal : Ui.Navy); e.Graphics.FillRectangle(brush, e.Bounds); TextRenderer.DrawText(e.Graphics, navigation.Items[e.Index].ToString(), Font, new Point(e.Bounds.X+16,e.Bounds.Y+14), Color.White); };
-        var footer = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 68, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(18,12,18,8), BackColor = Color.White };
-        footer.Controls.AddRange([next, back, cancel]);
-        var header = new Label { Dock = DockStyle.Top, Height = 66, Padding = new Padding(25,17,0,0), Text = "M365COLLECTOR   /   FIRST RUN                                        v" + ProductInfo.Version, ForeColor = Color.White, BackColor = Ui.Navy, Font = new Font("Segoe UI", 15, FontStyle.Bold) };
-        Controls.Add(body); Controls.Add(navigation); Controls.Add(footer); Controls.Add(header);
-        back.Click += (_,_) => { if (!busy && step>0) { step--; Render(); } };
-        next.Click += async (_,_) => await Advance(); cancel.Click += (_,_) => Close();
-        FormClosing += (_,e) => { if (busy) { e.Cancel = true; status.Text = "Please wait for the current setup operation to finish."; } else lifetime.Cancel(); };
-        Render();
+        Ui.Style(this, "M365Collector 0.0.1 • First Run Wizard");
+        if (File.Exists(InstallationState.Locator)) dataRoot = JsonFile.Read<Installation>(InstallationState.Locator).DataRoot;
+        var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 70, Padding = new Padding(24, 10, 24, 10), FlowDirection = FlowDirection.RightToLeft };
+        next = Ui.Button("Next →", async () => await Advance()); back = Ui.Button("← Back", () => { step--; Render(); }); cancel = Ui.Button("Cancel", () => Close());
+        buttons.Controls.Add(next); buttons.Controls.Add(back); buttons.Controls.Add(cancel); Controls.Add(page); Controls.Add(buttons);
+        FormClosing += (_, e) => { if (busy) e.Cancel = true; }; Render();
     }
     private void Render()
     {
-        body.Controls.Clear(); navigation.Invalidate();
-        var page = Ui.Page(Steps[step], $"Step {step+1} of {Steps.Length} · M365Collector {ProductInfo.Version}"); body.Controls.Add(page);
-        back.Enabled = step > 0 && config == null; next.Text = step == 7 ? "Finish & add customer" : "Next";
-        status.Text = ""; status.ForeColor = Ui.Teal;
-        switch(step)
+        page.Controls.Clear(); status.Text = ""; page.Controls.Add(Ui.Text($"{step + 1} / {Steps.Length}   {Steps[step]}", heading: true));
+        back.Enabled = step > 0 && step < 5; next.Text = step == 8 ? "Finish & add customer" : "Next →";
+        switch (step)
         {
-            case 0:
-                page.Controls.Add(Ui.Text("A secure foundation for every customer tenant.",18,true));
-                page.Controls.Add(Ui.Text("Set up storage, install the independent collection service, and prepare certificate-based Microsoft 365 onboarding.\n\nYour data stays in a folder you choose. Closing the management application never stops the service.\n\nThis release collects tenant identity only. No automatic update system is included."));
-                if(config != null) page.Controls.Add(Ui.Text("An incomplete setup was found. We will resume using its registered DataRoot."));
-                break;
-            case 1:
-                page.Controls.Add(Ui.Text("Windows Server 2019 or later / Windows 11 · x64\nLocal NTFS storage and an elevated Windows administrator\nOutbound HTTPS: login.microsoftonline.com and graph.microsoft.com\nSelf-contained .NET runtime supplied in the release package\nPowerShell is optional for the Tenant Identity collector."));
-                page.Controls.Add(Ui.Text("No PowerShell modules will be installed. Service binaries are placed under Program Files; customer data remains under your selected DataRoot.")); break;
-            case 2:
-                page.Controls.Add(Ui.Button("Run dependency checks", async (_,_) => await Check(page), true));
-                page.Controls.Add(Ui.Text("Required checks must pass before continuing. No software is installed by this check.")); break;
+            case 0: page.Controls.Add(Ui.Text("A secure foundation for Microsoft 365 collection. This wizard installs the independent Windows Service, creates protected runtime storage and creates your first local Administrator.\n\nMicrosoft passwords are never requested by M365Collector.")); break;
+            case 1: page.Controls.Add(Ui.Text("64-bit Windows 10 1809 / Server 2019 or newer\nAdministrator elevation\nPowerShell 5.1+ for optional guided setup\nHTTPS access to Microsoft login, Graph and GitHub\n512 MB or more free space for runtime data\n\nThe release includes its .NET runtime. Application binaries install under Program Files; runtime data stays separate.")); break;
+            case 2: page.Controls.Add(Ui.Text("Next runs the dependency checks. Errors appear here; correct them and retry.")); break;
             case 3:
-                var field = Ui.Field(page, "Where should M365Collector store its data?", root, config != null);
-                field.TextChanged += (_,_) => { root=field.Text; storageChecked=false; };
-                var browse = Ui.Button("Browse…", (_,_) => { using var picker=new FolderBrowserDialog { Description="Choose a dedicated empty data folder", UseDescriptionForTitle=true }; if(picker.ShowDialog()==DialogResult.OK) field.Text=picker.SelectedPath; }); browse.Enabled=config==null;
-                page.Controls.Add(Ui.Row(browse, Ui.Button("Validate location", (_,_) => {
-                    try { root=RuntimePaths.Validate(field.Text,AppContext.BaseDirectory,SetupOperations.InstallRoot); var free=RuntimePaths.WriteTest(root); storageChecked=free>=512L*1024*1024;
-                        status.Text=$"Write test passed · {free/1024.0/1024/1024:F1} GB available"+(storageChecked?"":" · At least 512 MB required"); }
-                    catch(Exception ex) { storageChecked=false; status.Text=ex.Message; }
-                },true)));
-                page.Controls.Add(Ui.Text("Use a dedicated local NTFS folder such as D:\\M365CollectorData. Network shares, junctions, application folders and drive roots are rejected.")); break;
-            case 4:
-                page.Controls.Add(Ui.Text("DataRoot\n"+root,14,true));
-                page.Controls.Add(Ui.Text("Config / Logs / Database / Cache / Service\nReports / Exports / Temp / Customers / <TenantId>\n\nNext creates the protected runtime structure, versioned configuration and SQLite database. Setup remains recoverable if a later step fails.")); break;
-            case 5:
-                page.Controls.Add(Ui.Text("M365CollectorService",18,true));
-                page.Controls.Add(Ui.Text("Automatic startup · LocalService with a service-specific SID\n\nBinaries: "+SetupOperations.InstallRoot+"\nData: "+root+"\n\nNext installs and starts the service, then checks its heartbeat and version. This creates persistent Windows components."));
-                page.Controls.Add(Ui.Button("Verify existing service",(_,_)=> { status.Text=SetupOperations.Healthy(new RuntimePaths(root))?"Service healthy. Next will continue setup.":"No healthy service detected yet."; })); break;
+                data = Ui.Field(page, "Where should M365Collector store runtime data?", value: dataRoot);
+                page.Controls.Add(Ui.Button("Browse…", () => { using var dialog = new FolderBrowserDialog { Description = "Choose a dedicated M365Collector data folder", UseDescriptionForTitle = true }; if (dialog.ShowDialog() == DialogResult.OK) data.Text = dialog.SelectedPath; }));
+                page.Controls.Add(Ui.Text("Examples: C:\\ProgramData\\M365Collector or D:\\M365CollectorData. Use an empty dedicated local folder. Its permissions will be restricted to administrators and the service.")); break;
+            case 4: page.Controls.Add(Ui.Text("Create Config, Database, Logs, Reports, Exports, Cache, Temp, Service and Customers under:\n" + dataRoot)); break;
+            case 5: page.Controls.Add(Ui.Text("Install M365CollectorService under LocalService with its own service SID, configure automatic startup, start it and verify database access and a fresh heartbeat. Closing the GUI will not stop collection.\n\nCancelling after this step retains the installation for safe resumption.")); break;
             case 6:
-                page.Controls.Add(Ui.Text("Windows administrator authentication",18,true));
-                page.Controls.Add(Ui.Text("The elevated Windows Administrators group is the application administrator mechanism in v0.1.0. Windows validates the account; M365Collector stores no local passwords.\n\nRuntime folders are restricted to Administrators, SYSTEM and the collection service. Operator and Read Only roles are defined for future access providers and cannot sign in yet.\n\nInitial administrator SID:\n"+WindowsSecurity.CurrentSid)); break;
-            case 7:
-                page.Controls.Add(Ui.Text("Verify the foundation before onboarding",18,true));
-                page.Controls.Add(Ui.Text("Finish verifies configuration, database schema, storage access and a fresh service heartbeat with version 0.1.0. Only then is setup marked complete.\n\nThe next page is Customers → Add Customer.")); break;
+                username = Ui.Field(page, "First local Administrator username"); password = Ui.Field(page, "Local password (14+ characters; not a Microsoft password)", true); confirm = Ui.Field(page, "Confirm local password", true); break;
+            case 7: page.Controls.Add(Ui.Text("Verify the SQLite schema, local Administrator, service Running state and current-version heartbeat.")); break;
+            case 8: page.Controls.Add(Ui.Text("The platform is ready. Sign in to your local account, then add your first customer. Customer onboarding uses Microsoft-controlled sign-in or guided/manual Entra setup, followed by service-side app-only verification.")); break;
         }
         page.Controls.Add(status);
     }
-    private async Task Check(FlowLayoutPanel page)
-    {
-        SetBusy(true); status.Text="Checking dependencies…";
-        try
-        {
-            var results=await SetupOperations.CheckDependencies(lifetime.Token); dependencyResults=results; dependenciesPassed=results.All(r=>!r.Required||r.Present);
-            status.Text=string.Join("\n\n",results.Select(r=>$"{(r.Present?"PRESENT":"MISSING")} · {(r.Required?"Required":"Optional")} · {r.Name}\n{r.Detail}"));
-        }
-        catch { status.Text="Dependency checks did not complete. Retry."; }
-        finally { SetBusy(false); }
-    }
-    private void SetBusy(bool value) { busy=value; next.Enabled=!value; back.Enabled=!value&&step>0&&config==null; cancel.Enabled=!value; }
     private async Task Advance()
     {
-        SetBusy(true);
+        busy = true; next.Enabled = back.Enabled = cancel.Enabled = false;
         try
         {
-            if(step==2&&!dependenciesPassed) throw new InvalidOperationException("Run checks and resolve missing required dependencies first.");
-            if(step==3&&!storageChecked) throw new InvalidOperationException("Validate the selected storage location first.");
-            if(step==4)
+            status.Text = "Working…";
+            switch (step)
             {
-                config=SetupOperations.CreateRuntime(root);
-                var log=new StructuredLog(new RuntimePaths(root),"gui");
-                for(var index=0;index<dependencyResults.Count;index++)log.Write("DependencyCheck",dependencyResults[index].Present?"Present":"Missing",code:"Check"+index);
+                case 2: status.Text = await SetupOperations.CheckAsync(); step++; await Task.Delay(500); Render(); return;
+                case 3:
+                    dataRoot = new RuntimePaths(data!.Text).Root;
+                    var resuming = File.Exists(InstallationState.Locator) && JsonFile.Read<Installation>(InstallationState.Locator).DataRoot.Equals(dataRoot, StringComparison.OrdinalIgnoreCase);
+                    if (Directory.Exists(dataRoot) && Directory.EnumerateFileSystemEntries(dataRoot).Any() && !resuming) throw new IOException("Choose an empty dedicated folder. Existing unrelated data must not have its permissions changed.");
+                    new RuntimePaths(dataRoot).Validate(SetupOperations.AppRoot); break;
+                case 4:
+                    WindowsAcl.ProtectDirectory(dataRoot, true); new RuntimePaths(dataRoot).Create();
+                    WindowsAcl.ProtectDirectory(Path.GetDirectoryName(InstallationState.Locator)!, false);
+                    JsonFile.Write(InstallationState.Locator, new Installation(dataRoot, SetupOperations.AppRoot, false)); break;
+                case 5: await SetupOperations.InstallAsync(new(dataRoot, SetupOperations.AppRoot, false)); break;
+                case 6:
+                    var accounts = new LocalAccounts(new CollectorStore(new RuntimePaths(dataRoot).Database));
+                    if (accounts.HasUsers) { if (accounts.Login(username!.Text, password!.Text)?.Role != LocalRole.Administrator) throw new UnauthorizedAccessException("Setup already has an Administrator. Enter that local account to resume."); }
+                    else { if (password!.Text != confirm!.Text) throw new ArgumentException("Passwords do not match."); accounts.CreateFirst(username!.Text, password.Text); }
+                    password!.Clear(); confirm!.Clear(); break;
+                case 7:
+                    var paths = new RuntimePaths(dataRoot); var store = new CollectorStore(paths.Database); store.Verify(); if (!new LocalAccounts(store).HasUsers) throw new InvalidOperationException("Create the local Administrator first.");
+                    await new WindowsServiceControl().VerifyAsync(paths, Product.Version, DateTimeOffset.UtcNow.AddSeconds(-15), CancellationToken.None); break;
+                case 8: JsonFile.Write(InstallationState.Locator, new Installation(dataRoot, SetupOperations.AppRoot, true)); DialogResult = DialogResult.OK; busy = false; Close(); return;
             }
-            if(step==5 && !SetupOperations.Healthy(new RuntimePaths(root)))
-                await SetupOperations.InstallAndStart(config!,new Progress<string>(message=>status.Text=message),lifetime.Token);
-            if(step==6) { new CollectorDatabase(new RuntimePaths(root)).InitializeAdministrator(WindowsSecurity.CurrentSid); new StructuredLog(new RuntimePaths(root),"gui").Write("AdministratorInitialized","Success"); }
-            if(step==7)
-            {
-                var paths=new RuntimePaths(root); config=new ConfigurationStore(paths).Load();
-                if(!SetupOperations.Healthy(paths)||new CollectorDatabase(paths).SchemaVersion()!=ProductInfo.DatabaseSchema) throw new InvalidOperationException("Service health or database verification failed. Setup remains incomplete.");
-                RuntimePaths.WriteTest(root); config=config with { SetupComplete=true }; new ConfigurationStore(paths).Save(config); InstallationRegistry.Register(config);
-                new StructuredLog(paths,"gui").Write("SetupCompleted","Success"); CompletedConfig=config;
-                SetBusy(false); DialogResult=DialogResult.OK; Close(); return;
-            }
-            if(config!=null)new StructuredLog(new RuntimePaths(root),"gui").Write("WizardStage","Success",code:"Step"+(step+1));
             step++; Render();
         }
-        catch(Exception ex) { status.Text=ex.Message; status.ForeColor=Color.Firebrick; }
-        finally { SetBusy(false); }
+        catch (Exception error) { status.Text = error.Message + "\nCorrect the issue, then select Next to retry."; }
+        finally { busy = false; next.Enabled = cancel.Enabled = true; back.Enabled = step > 0 && step < 5; }
     }
-    protected override void Dispose(bool disposing) { if(disposing) lifetime.Dispose(); base.Dispose(disposing); }
 }

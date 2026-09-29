@@ -1,4 +1,1 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
-  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>M365Collector.Service</AssemblyName></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../M365Collector.Storage/M365Collector.Storage.csproj" /><ProjectReference Include="../M365Collector.Modules.TenantIdentity/M365Collector.Modules.TenantIdentity.csproj" /><PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" /><PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.12" /></ItemGroup>
-</Project>
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup><ItemGroup><ProjectReference Include="../M365Collector.Storage/M365Collector.Storage.csproj" /><ProjectReference Include="../M365Collector.Security/M365Collector.Security.csproj" /><ProjectReference Include="../M365Collector.Modules.TenantIdentity/M365Collector.Modules.TenantIdentity.csproj" /><PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" /></ItemGroup></Project>

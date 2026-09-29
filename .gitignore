@@ -18,3 +18,7 @@ TestResults/
 *.db-shm
 *.db-wal
 *.pdb
+*.cer
+*.key
+*.log
+*.trx

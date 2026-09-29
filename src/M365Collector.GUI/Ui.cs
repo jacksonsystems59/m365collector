@@ -1,43 +1,43 @@
-using System.Diagnostics;
-
+using M365Collector.Contracts;
+using M365Collector.Security;
+using M365Collector.Storage;
 namespace M365Collector.GUI;
-
-public static class Ui
+internal static class Ui
 {
-    public static readonly Color Navy = Color.FromArgb(20, 37, 57);
-    public static readonly Color Teal = Color.FromArgb(0, 112, 118);
-    public static readonly Color Muted = Color.FromArgb(83, 100, 118);
-    public static readonly Color Canvas = Color.FromArgb(242, 246, 250);
-    public static Label Text(string text, int size = 11, bool bold = false) => new()
+    public static readonly Color Ink = Color.FromArgb(27, 42, 63), Accent = Color.FromArgb(0, 103, 145);
+    public static void Style(Form form, string title, int width = 1060, int height = 760)
     {
-        Text = text, AutoSize = true, MaximumSize = new Size(840, 0), ForeColor = size >= 18 ? Navy : Muted,
-        Font = new Font("Segoe UI", size, bold ? FontStyle.Bold : FontStyle.Regular), Margin = new Padding(0, 0, 0, 14)
-    };
-    public static Button Button(string text, EventHandler? handler = null, bool primary = false)
-    {
-        var button = new Button { Text = text, AutoSize = true, MinimumSize = new Size(120, 38), Padding = new Padding(12, 5, 12, 5),
-            FlatStyle = FlatStyle.Flat, BackColor = primary ? Teal : Color.White, ForeColor = primary ? Color.White : Navy, Margin = new Padding(0, 0, 10, 10), Cursor = Cursors.Hand };
-        button.FlatAppearance.BorderColor = primary ? Teal : Color.FromArgb(201, 213, 224);
-        if (handler != null) button.Click += handler;
-        return button;
+        form.Text = title; form.Font = new Font("Segoe UI", 10); form.BackColor = Color.White; form.ForeColor = Ink; form.Size = new Size(width, height); form.MinimumSize = new Size(760, 600); form.StartPosition = FormStartPosition.CenterScreen; form.AutoScaleMode = AutoScaleMode.Dpi;
     }
-    public static FlowLayoutPanel Page(string title, string subtitle)
+    public static FlowLayoutPanel Stack() => new() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(24) };
+    public static Label Text(string text, int width = 700, bool heading = false) => new() { Text = text, AutoSize = true, MaximumSize = new Size(width, 0), Margin = new Padding(0, 0, 0, 14), Font = new Font("Segoe UI", heading ? 21 : 10, heading ? FontStyle.Bold : FontStyle.Regular) };
+    public static TextBox Field(FlowLayoutPanel panel, string label, bool password = false, string value = "")
     {
-        var page = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, Padding = new Padding(30), BackColor = Canvas };
-        page.Controls.Add(Text(title, 24, true)); page.Controls.Add(Text(subtitle)); return page;
+        panel.Controls.Add(Text(label)); var input = new TextBox { Width = 560, UseSystemPasswordChar = password, Text = value, Margin = new Padding(0, 0, 0, 18) }; panel.Controls.Add(input); return input;
     }
-    public static FlowLayoutPanel Row(params Control[] controls)
+    public static Button Button(string text, Action action)
     {
-        var row = new FlowLayoutPanel { AutoSize = true, WrapContents = true, MaximumSize = new Size(880, 0), Margin = new Padding(0, 0, 0, 10) };
-        row.Controls.AddRange(controls); return row;
+        var button = new Button { Text = text, AutoSize = true, MinimumSize = new Size(130, 38), FlatStyle = FlatStyle.Flat, BackColor = Accent, ForeColor = Color.White, Padding = new Padding(8, 3, 8, 3), Margin = new Padding(0, 0, 12, 12) }; button.Click += (_, _) => action(); return button;
     }
-    public static TextBox Field(FlowLayoutPanel page, string label, string value = "", bool readOnly = false)
+    public static Button AsyncButton(string text, Func<Task> action, Label status)
     {
-        page.Controls.Add(Text(label, 10, true));
-        var box = new TextBox { Text = value, Width = 680, ReadOnly = readOnly, Margin = new Padding(0, 0, 0, 16), Font = new Font("Segoe UI", 11) };
-        page.Controls.Add(box); return box;
+        var button = Button(text, () => { }); button.Click += async (_, _) => { button.Enabled = false; try { status.Text = "Working…"; await action(); } catch (Exception e) { status.Text = e.Message; } finally { if (!button.IsDisposed) button.Enabled = true; } }; return button;
     }
-    public static CheckBox Check(string text, bool value = false) => new() { Text = text, AutoSize = true, Checked = value, MaximumSize = new Size(820, 0), Margin = new Padding(0, 0, 0, 15) };
-    public static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    public static void Open(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https" || !uri.IsDefaultPort || uri.UserInfo.Length != 0 || !(uri.Host == "entra.microsoft.com" || uri.Host == "github.com" && uri.AbsolutePath.StartsWith("/jacksonsystems59/m365collector/releases/tag/", StringComparison.Ordinal))) throw new InvalidDataException("Only the expected Entra and GitHub release pages may be opened.");
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+    }
+}
+internal sealed class LoginForm : Form
+{
+    public LocalUser? User { get; private set; }
+    public LoginForm(CollectorStore store)
+    {
+        Ui.Style(this, "M365Collector • Local sign-in", 780, 600); var panel = Ui.Stack(); Controls.Add(panel);
+        panel.Controls.Add(Ui.Text("Welcome to M365Collector", heading: true)); panel.Controls.Add(Ui.Text("Sign in with your local M365Collector account. This is separate from Microsoft 365 authentication."));
+        var name = Ui.Field(panel, "Local username"); var password = Ui.Field(panel, "Local password", true); var status = Ui.Text("");
+        var login = Ui.AsyncButton("Sign in", async () => { User = await Task.Run(() => new LocalAccounts(store).Login(name.Text, password.Text)); password.Clear(); if (User == null) { status.Text = "Sign-in failed or account is temporarily locked. After five failures, wait 15 minutes."; return; } DialogResult = DialogResult.OK; Close(); }, status);
+        panel.Controls.Add(login); panel.Controls.Add(status); AcceptButton = login;
+    }
 }
