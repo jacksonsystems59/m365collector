@@ -8,5 +8,5 @@ public sealed class TenantIdentityModule(IAppOnlyIdentityReader reader) : IColle
         var identity = await reader.ReadAsync(customer, ct);
         if (identity.TenantId != customer.TenantId) throw new InvalidDataException("Collector tenant mismatch."); return identity;
     }
-    public static readonly string[] FutureModules = ["Sign-in Activity", "Failed Sign-ins", "Location/IP Activity", "Exchange Message Trace", "SharePoint/OneDrive Audit", "Teams Activity", "Directory Changes"];
+    public static readonly string[] FutureModules = ["Exchange Message Trace"];
 }

@@ -494,10 +494,28 @@
           "M365Collector.Updater": "[0.0.1, )"
         }
       },
+      "m365collector.modules.directorychanges": {
+        "type": "Project",
+        "dependencies": {
+          "M365Collector.Entra": "[0.0.1, )"
+        }
+      },
+      "m365collector.modules.signinactivity": {
+        "type": "Project",
+        "dependencies": {
+          "M365Collector.Entra": "[0.0.1, )"
+        }
+      },
       "m365collector.modules.tenantidentity": {
         "type": "Project",
         "dependencies": {
           "M365Collector.Contracts": "[0.0.1, )",
+          "M365Collector.Entra": "[0.0.1, )"
+        }
+      },
+      "m365collector.modules.unifiedaudit": {
+        "type": "Project",
+        "dependencies": {
           "M365Collector.Entra": "[0.0.1, )"
         }
       },
@@ -511,7 +529,10 @@
       "m365collector.service": {
         "type": "Project",
         "dependencies": {
+          "M365Collector.Modules.DirectoryChanges": "[0.0.1, )",
+          "M365Collector.Modules.SignInActivity": "[0.0.1, )",
           "M365Collector.Modules.TenantIdentity": "[0.0.1, )",
+          "M365Collector.Modules.UnifiedAudit": "[0.0.1, )",
           "M365Collector.Security": "[0.0.1, )",
           "M365Collector.Storage": "[0.0.1, )",
           "Microsoft.Extensions.Hosting.WindowsServices": "[10.0.12, )"

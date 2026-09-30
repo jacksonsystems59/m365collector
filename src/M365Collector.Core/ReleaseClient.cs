@@ -25,7 +25,7 @@ public sealed class ReleaseClient(HttpClient http, string cachePath)
         ReleaseCache? cached = null;
         try { if (File.Exists(cachePath)) cached = JsonFile.Read<ReleaseCache>(cachePath); } catch (JsonException) { }
         if (!force && cached != null && cached.Checked > DateTimeOffset.UtcNow.AddHours(-6)) return cached;
-        using var request = new HttpRequestMessage(HttpMethod.Get, Api); request.Headers.UserAgent.ParseAdd("M365Collector/0.0.1"); request.Headers.Accept.ParseAdd("application/vnd.github+json");
+        using var request = new HttpRequestMessage(HttpMethod.Get, Api); request.Headers.UserAgent.ParseAdd("M365Collector/"+M365Collector.Contracts.Product.Version); request.Headers.Accept.ParseAdd("application/vnd.github+json");
         if (cached?.ETag != null) request.Headers.TryAddWithoutValidation("If-None-Match", cached.ETag);
         using var response = await http.SendAsync(request, ct);
         if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests) throw new HttpRequestException("GitHub rate limit or access restriction. Try again later; no credentials are required.");

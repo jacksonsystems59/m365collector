@@ -2,7 +2,7 @@ namespace M365Collector.Entra;
 public static class GuidedSetup
 {
     public const string Script = """
-        # M365Collector 0.0.1 — review before running in elevated PowerShell.
+        # M365Collector 0.0.2 — review before running in elevated PowerShell.
         # Optional dependency: Install-Module Microsoft.Graph -Scope CurrentUser
         # No administrator password is requested or handled by this script.
         $ErrorActionPreference = 'Stop'

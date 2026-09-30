@@ -60,7 +60,7 @@ public sealed class UpdateTransaction(Installation installation, string work, IS
         foreach (var suffix in new[] { "-wal", "-shm", "-journal" }) if (File.Exists(paths.Database + suffix)) File.Delete(paths.Database + suffix);
         File.Copy(OldDb, paths.Database, true);
         var config = Path.Combine(paths.Root, "Config"); if (Directory.Exists(config)) Directory.Delete(config, true); UpdatePackage.CopyTree(OldConfig, config);
-        var since = DateTimeOffset.UtcNow; await service.StartAsync(ct); await service.VerifyAsync(paths, request.PreviousVersion, since, ct); new CollectorStore(paths.Database).Verify();
+        var since = DateTimeOffset.UtcNow; await service.StartAsync(ct); await service.VerifyAsync(paths, request.PreviousVersion, since, ct); new CollectorStore(paths.Database).VerifyIntegrity();
         new CollectorStore(paths.Database).UpdateHistory(request.TargetVersion, "Rolled back"); State("RolledBack", request); Log("Rollback verified; previous version restored");
     }
 }

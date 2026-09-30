@@ -5,9 +5,9 @@ using System.Text.Json;
 
 namespace M365Collector.Storage;
 
-public sealed class CollectorStore : ICustomerRepository
+public sealed partial class CollectorStore : ICustomerRepository, IAuditStore
 {
-    public const int CurrentSchema = 1;
+    public const int CurrentSchema = 2;
     private readonly string path;
     public CollectorStore(string path) { this.path = path; }
     public SqliteConnection Open()
@@ -35,7 +35,9 @@ public sealed class CollectorStore : ICustomerRepository
                 INSERT INTO SchemaVersion VALUES(1);
                 """);
         }
+        if (current < 2) Execute(db, transaction, Migration2);
         beforeCommit?.Invoke(db, transaction); transaction.Commit();
+        using var journal=db.CreateCommand();journal.CommandText="PRAGMA journal_mode=WAL";journal.ExecuteScalar();
     }
     private static void Execute(SqliteConnection db, SqliteTransaction tx, string sql) { using var cmd = db.CreateCommand(); cmd.Transaction = tx; cmd.CommandText = sql; cmd.ExecuteNonQuery(); }
     private static void Bind(SqliteCommand cmd, (string, object?)[] values) { foreach (var (key, value) in values) cmd.Parameters.AddWithValue(key, value ?? DBNull.Value); }
@@ -50,6 +52,11 @@ public sealed class CollectorStore : ICustomerRepository
         var schema = Read("SELECT MAX(Version) FROM SchemaVersion", r => r.GetInt32(0)).Single();
         if (health.Count != 1 || health[0] != "ok" || (allowNewerSchema ? schema < CurrentSchema : schema != CurrentSchema)) throw new InvalidDataException("Database health verification failed.");
     }
+    public void VerifyIntegrity()
+    {
+        var check=Read("PRAGMA quick_check",r=>r.GetString(0));
+        if(check.Count!=1||check[0]!="ok"||Read("SELECT MAX(Version) FROM SchemaVersion",r=>r.GetInt32(0)).Single()<1)throw new InvalidDataException("Database integrity check failed.");
+    }
     public string? Setting(string key) => Read("SELECT Value FROM Settings WHERE Key=$key", r => r.GetString(0), ("$key", key)).SingleOrDefault();
     public void Setting(string key, string value) => Write("INSERT INTO Settings VALUES($key,$value) ON CONFLICT(Key) DO UPDATE SET Value=excluded.Value", ("$key", key), ("$value", value));
     public IReadOnlyList<Customer> GetCustomers() => Read("SELECT Payload FROM Customers ORDER BY Name", r => JsonSerializer.Deserialize<Customer>(r.GetString(0))!);
@@ -57,7 +64,8 @@ public sealed class CollectorStore : ICustomerRepository
     {
         if (customer.Identity?.TenantId != customer.TenantId || customer.TenantId == Guid.Empty) throw new InvalidDataException("A verified matching tenant identity is required.");
         Write("INSERT INTO Customers VALUES($id,$name,$payload) ON CONFLICT(TenantId) DO UPDATE SET Name=excluded.Name,Payload=excluded.Payload", ("$id", customer.TenantId.ToString()), ("$name", customer.Name), ("$payload", JsonSerializer.Serialize(customer)));
-        Write("INSERT OR IGNORE INTO ModuleConfiguration VALUES($id,'tenant-identity',1)", ("$id", customer.TenantId.ToString()));
+        Write("INSERT OR IGNORE INTO ModuleConfiguration(TenantId,ModuleId,Enabled,ScheduleMinutes) VALUES($id,'tenant-identity',1,60)", ("$id", customer.TenantId.ToString()));
+        EnsureModules(customer.TenantId);
     }
     public Guid RequestConnection(Customer customer)
     {

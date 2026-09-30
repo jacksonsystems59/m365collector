@@ -1,5 +1,5 @@
 namespace M365Collector.Contracts;
-public static class Product { public const string Version = "0.0.1"; public const string ServiceName = "M365CollectorService"; }
+public static class Product { public const string Version = "0.0.2"; public const string ServiceName = "M365CollectorService"; }
 public enum LocalRole { Administrator, Operator, ReadOnly }
 public sealed record LocalUser(string Name, LocalRole Role);
 public sealed record Customer(Guid TenantId, string Name, Guid ClientId, string Thumbprint, TenantIdentity? Identity = null);

@@ -38,3 +38,7 @@ On interruption, Settings → Updates exposes Recover interrupted update. The st
 Update logs are under `<DataRoot>\Logs\Updates`. `Config\last-update.json` and the journal identify the last transaction; UpdateHistory records successful installs and verified rollback outcomes.
 
 Tests inject network/service/migration failures and verify database/config restoration and preservation of reports. They also reject bad checksums, unsafe ZIP paths and unlisted payloads. Actual service-control and live-tenant acceptance are separately documented deployment checks.
+
+## 0.0.1 to 0.0.2
+
+The release retains the GUI/Service/Updater package layout and checksum/manifest formats understood by 0.0.1. The service migrates schema 1 to 2 transactionally; updater backup/recovery preserves the prior database for rollback. New collector permissions are not granted by installing an update. The installed GUI shows LOCK and its version at bottom-left. See [live upgrade acceptance](COLLECTOR-MODULES.md#live-acceptance-checklist); automated package checks do not replace installed-service testing.

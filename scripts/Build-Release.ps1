@@ -23,8 +23,8 @@ try {
         if ($file.Extension -notin @('.exe','.dll','.json','.config','.xml','.pri','.dat')) { throw "Unexpected release file: $relative" }
         $manifestFiles[$relative] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
     }
-    @{version='0.0.1';files=$manifestFiles} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $stagingPath 'package.json') -Encoding utf8NoBOM
-    $zipPath = Join-Path $repoRoot 'dist\M365Collector-0.0.1-win-x64.zip'
+    @{version='0.0.2';files=$manifestFiles} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $stagingPath 'package.json') -Encoding utf8NoBOM
+    $zipPath = Join-Path $repoRoot 'dist\M365Collector-0.0.2-win-x64.zip'
     # Only the explicitly named generated ZIP is replaced. No recursive deletion.
     if (Test-Path -LiteralPath $zipPath) { [IO.File]::Delete($zipPath) }
     [IO.Compression.ZipFile]::CreateFromDirectory($stagingPath,$zipPath,[IO.Compression.CompressionLevel]::Optimal,$false)

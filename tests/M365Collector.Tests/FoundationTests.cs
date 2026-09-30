@@ -63,7 +63,7 @@ public class FoundationTests
     [Theory][InlineData("")][InlineData("../../key")][InlineData("not-a-thumbprint")] public void InvalidCertificateReferencesAreRejected(string thumbprint) => Assert.Throws<ArgumentException>(() => Certificates.Find(thumbprint));
     [Fact] public void OnlyTenantIdentityHasCollectionPermissions()
     {
-        var manifest = new TenantIdentityModule(new FakeReader()).Manifest; Assert.Equal("Organization.Read.All", Assert.Single(manifest.ApplicationPermissions).Name); Assert.Empty(manifest.PowerShellDependencies); Assert.True(manifest.CanCollect); Assert.Equal(7, TenantIdentityModule.FutureModules.Length);
+        var manifest = new TenantIdentityModule(new FakeReader()).Manifest; Assert.Equal("Organization.Read.All", Assert.Single(manifest.ApplicationPermissions).Name); Assert.Empty(manifest.PowerShellDependencies); Assert.True(manifest.CanCollect); Assert.Equal("Exchange Message Trace", Assert.Single(TenantIdentityModule.FutureModules));
     }
     [Theory][InlineData(false)][InlineData(true)] public async Task DelegatedBootstrapIsAlwaysDisposed(bool fail)
     {

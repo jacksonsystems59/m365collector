@@ -6,7 +6,7 @@ using M365Collector.Storage;
 using M365Collector.Updater;
 using System.Diagnostics;
 namespace M365Collector.GUI;
-internal sealed class MainForm : Form
+internal sealed partial class MainForm : Form
 {
     private readonly Installation installation; private readonly CollectorStore store; private LocalUser user; private readonly RuntimePaths paths;
     private readonly Panel content = new() { Dock = DockStyle.Fill };
@@ -14,17 +14,23 @@ internal sealed class MainForm : Form
     private readonly HttpClient http = new() { Timeout = TimeSpan.FromMinutes(10) };
     private readonly System.Windows.Forms.Timer timer = new() { Interval = 60_000 };
     private readonly ActivityFilter activity = new(); private bool locking; private DateTimeOffset nextBackgroundCheck;
+    private readonly FlowLayoutPanel updateNotice=new(){Dock=DockStyle.Top,Height=110,Padding=new Padding(12),Visible=false,BackColor=Color.FromArgb(229,244,253)};
     public MainForm(Installation installation, CollectorStore store, LocalUser user)
     {
         this.installation = installation; this.store = store; this.user = user; paths = new(installation.DataRoot);
-        Ui.Style(this, "M365Collector 0.0.1", 1240, 850);
-        var navigation = new FlowLayoutPanel { Dock = DockStyle.Left, Width = 225, Padding = new Padding(18, 24, 12, 0), FlowDirection = FlowDirection.TopDown, WrapContents = false, BackColor = Ui.Ink };
-        navigation.Controls.Add(new Label { Text = "M365Collector\n0.0.1", ForeColor = Color.White, Font = new Font("Segoe UI", 18, FontStyle.Bold), Width = 200, Height = 85 });
-        foreach (var (label, action) in new (string, Action)[] { ("Dashboard", Dashboard), ("All Customers", Customers), ("Add Customer", AddCustomer), ("Collection Modules", Modules), ("Audit Explorer", () => Placeholder("Audit Explorer", "Future filters: customer, timestamp, user, workload, action, file, folder, site, IP, location and result.")), ("Reports", () => Placeholder("Reports", "Tenant Identity data is currently available under All Customers and in the customer Data folder.")), ("Administration", Administration), ("Settings · Updates", Updates), ("Logs", Logs), ("Lock application", Lock) })
+        Ui.Style(this, "M365Collector " + Product.Version, 1340, 900);
+        var sidebar=new Panel{Dock=DockStyle.Left,Width=235,BackColor=Ui.Ink};
+        var navigation = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(18, 24, 8, 0), FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll=true, BackColor = Ui.Ink };
+        navigation.Controls.Add(new Label { Text = "M365Collector", ForeColor = Color.White, Font = new Font("Segoe UI", 17, FontStyle.Bold), Width = 205, Height = 60 });
+        foreach (var (label, action) in new (string, Action)[] { ("Dashboard", Dashboard), ("All Customers", Customers), ("Add Customer", AddCustomer), ("Collection Modules", Modules), ("Audit Explorer", () => Explorer()), ("Failed Sign-ins",()=>Explorer(module:"sign-ins",result:"Failed")), ("Location / IP Activity",()=>Explorer(module:"sign-ins",group:"IP / location")), ("Reports", () => Placeholder("Reports", "CSV export is available in Audit Explorer. PDF reporting is coming in a future version.")), ("Administration", Administration), ("Settings · Updates", Updates), ("Logs", Logs) })
         {
             var button = Ui.Button(label, action); button.Width = 188; navigation.Controls.Add(button);
         }
-        Controls.Add(content); Controls.Add(banner); Controls.Add(navigation);
+        var footer=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=105,Padding=new Padding(18,10,12,12),FlowDirection=FlowDirection.TopDown,WrapContents=false,BackColor=Ui.Ink};
+        var lockButton=Ui.Button("LOCK",Lock);lockButton.Width=188;lockButton.Name="SidebarLock";footer.Controls.Add(lockButton);
+        footer.Controls.Add(new Label{Text="Version "+Product.Version,AutoSize=true,ForeColor=Color.LightSteelBlue,Name="SidebarVersion"});
+        sidebar.Controls.Add(navigation);sidebar.Controls.Add(footer);
+        Controls.Add(content); Controls.Add(updateNotice); Controls.Add(banner); Controls.Add(sidebar);
         banner.Text = $"{user.Name} • {user.Role}   |   Data: {paths.Root}";
         Shown += async (_, _) => { if (store.GetCustomers().Count == 0 && Authorization.Allows(user, Capability.ManageCustomers)) AddCustomer(); else Dashboard(); await CheckNotice(); };
         Application.AddMessageFilter(activity);
@@ -36,42 +42,10 @@ internal sealed class MainForm : Form
         var page = Ui.Stack(); content.Controls.Add(page); page.Controls.Add(Ui.Text(title, heading: true)); return page;
     }
     private void Placeholder(string title, string text) { var page = Page(title); page.Controls.Add(Ui.Text("Coming in a future version")); page.Controls.Add(Ui.Text(text)); }
-    private void Dashboard()
-    {
-        var page = Page("Dashboard"); page.Controls.Add(Ui.Text($"{store.GetCustomers().Count} connected customers\nTenant Identity is the only active collector in 0.0.1."));
-        try { var heartbeat = JsonFile.Read<Heartbeat>(paths.Heartbeat); page.Controls.Add(Ui.Text($"Service heartbeat: {heartbeat.Time.LocalDateTime:g}\nVersion: {heartbeat.Version}\nHealth: {(heartbeat.Time > DateTimeOffset.UtcNow.AddSeconds(-30) ? "Recent heartbeat" : "Stale — check the Windows Service")}")); } catch (IOException) { page.Controls.Add(Ui.Text("Service heartbeat unavailable. Check M365CollectorService.")); }
-        var last = Path.Combine(paths.Root, "Config", "last-update.json"); if (File.Exists(last)) page.Controls.Add(Ui.Text("Last update transaction:\n" + File.ReadAllText(last)));
-        page.Controls.Add(Ui.Button("Refresh", Dashboard));
-    }
-    private void Customers()
-    {
-        var page = Page("All Customers"); var status = Ui.Text("");
-        foreach (var customer in store.GetCustomers())
-        {
-            page.Controls.Add(Ui.Text(customer.Name, heading: true));
-            page.Controls.Add(Ui.Text($"{customer.Identity?.DisplayName}\nTenant: {customer.TenantId}\nCollected: {customer.Identity?.CollectedAt.LocalDateTime:g}\nDomains: {string.Join(", ", customer.Identity?.Domains.Select(d => d.Name + (d.IsDefault ? " (default)" : "") + (d.IsInitial ? " (initial)" : "")) ?? [])}"));
-            if (Authorization.Allows(user, Capability.Collect)) page.Controls.Add(Ui.AsyncButton("Collect Tenant Identity", async () =>
-            {
-                Authorization.Require(user, Capability.Collect); var id = store.RequestConnection(customer); using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
-                while (true) { var request = store.Requests().Single(r => r.Id == id); if (request.State == "Failed") throw new InvalidOperationException(request.Error); if (request.State == "Verified") { store.SaveCustomer(request.Customer); status.Text = "Collection complete. Refresh to view."; return; } await Task.Delay(1000, timeout.Token); }
-            }, status));
-        }
-        page.Controls.Add(Ui.Button("Refresh", Customers)); page.Controls.Add(status);
-    }
     private void AddCustomer()
     {
         if (!Authorization.Allows(user, Capability.ManageCustomers)) { Placeholder("Add Customer", "An application Administrator must onboard customers."); return; }
         Page("Add Customer"); content.Controls.Clear(); content.Controls.Add(new CustomerPage(store, user, paths));
-    }
-    private void Modules()
-    {
-        var page = Page("Collection Modules"); page.Controls.Add(Ui.Text("Tenant Identity • Enabled • v0.0.1\nAPI: Microsoft Graph v1.0\nApplication permission: Organization.Read.All\nWhy required? Read tenant name and verified domains.\nPowerShell dependencies: none\nRuns hourly inside the service."));
-        foreach (var customer in store.GetCustomers())
-        {
-            var check = new CheckBox { Text = customer.Name + " — Tenant Identity", AutoSize = true, Checked = store.Read("SELECT Enabled FROM ModuleConfiguration WHERE TenantId=$id", r => r.GetBoolean(0), ("$id", customer.TenantId.ToString())).SingleOrDefault(), Enabled = Authorization.Allows(user, Capability.Collect) };
-            check.CheckedChanged += (_, _) => { Authorization.Require(user, Capability.Collect); store.Write("UPDATE ModuleConfiguration SET Enabled=$value WHERE TenantId=$id AND ModuleId='tenant-identity'", ("$value", check.Checked), ("$id", customer.TenantId.ToString())); }; page.Controls.Add(check);
-        }
-        foreach (var module in TenantIdentityModule.FutureModules) page.Controls.Add(Ui.Text(module + " — Coming later"));
     }
     private void Administration()
     {
@@ -90,8 +64,15 @@ internal sealed class MainForm : Form
     {
         if (DateTimeOffset.UtcNow < nextBackgroundCheck) return;
         nextBackgroundCheck = DateTimeOffset.UtcNow.AddMinutes(15);
-        try { var state = await ReleaseClient().CheckAsync(false, CancellationToken.None); nextBackgroundCheck = DateTimeOffset.UtcNow.AddHours(6); if (Core.ReleaseClient.IsUpdate(Product.Version, state.Release)) banner.Text = $"M365Collector {state.Release!.Version} is available. Open Settings · Updates to review and install."; }
+        try { var state = await ReleaseClient().CheckAsync(false, CancellationToken.None); nextBackgroundCheck = DateTimeOffset.UtcNow.AddHours(6); if (Core.ReleaseClient.IsUpdate(Product.Version, state.Release)&&store.Setting("DismissedUpdate")!=state.Release!.Version) ShowUpdateNotice(state.Release!); }
         catch (Exception e) when (e is HttpRequestException or IOException or System.Text.Json.JsonException or TaskCanceledException or FormatException or InvalidOperationException or KeyNotFoundException or OverflowException) { /* Explicit checks show errors; background checks retry after 15 minutes. */ }
+    }
+    private void ShowUpdateNotice(ReleaseInfo release)
+    {
+        updateNotice.Controls.Clear();var message=Ui.Text($"M365Collector Update Available\nCurrent: {Product.Version} • Available: {release.Version}",350);updateNotice.Controls.Add(message);
+        updateNotice.Controls.Add(Ui.Button("View What's New",Updates));
+        if(Authorization.Allows(user,Capability.InstallUpdates))updateNotice.Controls.Add(Ui.AsyncButton("Install Update",()=>InstallUpdate(release,message),message));
+        updateNotice.Controls.Add(Ui.Button("Later",()=>{store.Setting("DismissedUpdate",release.Version);updateNotice.Visible=false;}));updateNotice.Visible=true;
     }
     private void Updates()
     {

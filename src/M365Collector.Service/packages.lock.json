@@ -409,10 +409,28 @@
           "Microsoft.Identity.Client.Broker": "[4.90.0, )"
         }
       },
+      "m365collector.modules.directorychanges": {
+        "type": "Project",
+        "dependencies": {
+          "M365Collector.Entra": "[0.0.1, )"
+        }
+      },
+      "m365collector.modules.signinactivity": {
+        "type": "Project",
+        "dependencies": {
+          "M365Collector.Entra": "[0.0.1, )"
+        }
+      },
       "m365collector.modules.tenantidentity": {
         "type": "Project",
         "dependencies": {
           "M365Collector.Contracts": "[0.0.1, )",
+          "M365Collector.Entra": "[0.0.1, )"
+        }
+      },
+      "m365collector.modules.unifiedaudit": {
+        "type": "Project",
+        "dependencies": {
           "M365Collector.Entra": "[0.0.1, )"
         }
       },

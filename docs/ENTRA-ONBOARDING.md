@@ -34,3 +34,7 @@ Manual external certificates must be RSA, valid, in LocalMachine/My and readable
 - [Programmatic permission grants](https://learn.microsoft.com/en-us/graph/permissions-grant-via-msgraph)
 
 Live tenant consent and Conditional Access behavior require testing against an authorised test tenant. Automated tests use fake bootstrap sessions and verify unconditional cleanup; they do not claim live Microsoft onboarding acceptance.
+
+## Existing customers: 0.0.2 collector permissions
+
+Do not recreate the customer app. From Collection Modules choose Update Tenant Permissions, review the displayed tenant/application/resource/permission and consent using the configured bootstrap client. Sign-ins and Directory Changes require Graph AuditLog.Read.All; Unified Audit requires Office 365 Management APIs ActivityFeed.Read. Both are application permissions with tenant admin consent. The existing certificate and other permissions remain. Manual Entra consent is also supported. See [collector prerequisites](COLLECTOR-MODULES.md#consent-and-prerequisites).

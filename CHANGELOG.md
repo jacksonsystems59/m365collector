@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.2 — 2026-09-30
+
+- Added Sign-in Activity, Directory Changes and Microsoft 365 Unified Audit with pagination, bounded retries, checkpoints and tenant-scoped deduplication.
+- Added module/customer health cards, configurable schedules, independent service jobs, local Audit Explorer, raw event details, grouping and filtered CSV export.
+- Added reviewed permission updates for existing customer apps and explicit opt-in retention.
+- Migrated schema 1 transactionally to schema 2 while preserving existing users/customer references; added rollback-compatible integrity checks.
+- Anchored LOCK and version at bottom-left and added explicit update notification actions.
+- Added synthetic collector/storage/migration tests and live acceptance documentation. Live tenant and installed-service upgrade acceptance remains separate.
+
 ## 0.0.1 — 2026-09-29
 
 - Clean rebuild replacing the abandoned prototype, preserving repository identity and history.

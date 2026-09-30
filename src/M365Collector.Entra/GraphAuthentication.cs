@@ -106,4 +106,32 @@ public sealed class MicrosoftBootstrap : IBootstrapSession
         result = null;
         if (app != null) { try { foreach (var account in await app.GetAccountsAsync()) await app.RemoveAsync(account); } finally { app = null; } }
     }
+    public async Task GrantCollectorPermissionAsync(Customer customer,CollectorDefinition module,IProgress<string> progress,CancellationToken ct)
+    {
+        if(await IdentifyTenantAsync(ct)!=customer.TenantId)throw new InvalidOperationException("The Microsoft administrator signed into a different customer tenant. No permissions were changed.");
+        var resourceAppId=module.Resource=="https://graph.microsoft.com"?GraphAppId:"c5393580-f805-4401-95e8-94b7a6ef2fc2";
+        using var applications=await Send(HttpMethod.Get,$"applications?$filter=appId eq '{customer.ClientId}'&$select=id,requiredResourceAccess",null,"Find existing customer application",ct);
+        var application=applications.RootElement.GetProperty("value").EnumerateArray().Single();
+        using var principals=await Send(HttpMethod.Get,$"servicePrincipals?$filter=appId eq '{customer.ClientId}'&$select=id",null,"Find customer service principal",ct);
+        var principal=principals.RootElement.GetProperty("value").EnumerateArray().Single().GetProperty("id").GetString();
+        using var resourceDoc=await Send(HttpMethod.Get,$"servicePrincipals?$filter=appId eq '{resourceAppId}'&$select=id,appRoles",null,"Read required API permissions",ct);
+        var resources=resourceDoc.RootElement.GetProperty("value").EnumerateArray().ToArray();
+        if(resources.Length!=1)throw new InvalidOperationException("The API service principal is unavailable. Add the Office 365 Management APIs permission through Entra and grant consent, then retry.");
+        var resource=resources[0];var role=resource.GetProperty("appRoles").EnumerateArray().Single(r=>r.GetProperty("value").GetString()==module.Permission&&r.GetProperty("isEnabled").GetBoolean()&&r.GetProperty("allowedMemberTypes").EnumerateArray().Any(t=>t.GetString()=="Application")).GetProperty("id").GetString();
+        var access=new List<object>();var found=false;
+        foreach(var entry in application.GetProperty("requiredResourceAccess").EnumerateArray())
+        {
+            var appId=entry.GetProperty("resourceAppId").GetString();var permissions=entry.GetProperty("resourceAccess").EnumerateArray().Select(p=>new Dictionary<string,string>{{"id",p.GetProperty("id").GetString()!},{"type",p.GetProperty("type").GetString()!}}).ToList();
+            if(appId==resourceAppId){found=true;if(!permissions.Any(p=>p["id"]==role&&p["type"]=="Role"))permissions.Add(new(){{"id",role!},{"type","Role"}});}
+            access.Add(new{resourceAppId=appId,resourceAccess=permissions});
+        }
+        if(!found)access.Add(new{resourceAppId,resourceAccess=new[]{new{id=role,type="Role"}}});
+        progress.Report("Adding reviewed permission to existing app: "+module.Permission);
+        using var update=await Send(HttpMethod.Patch,"applications/"+application.GetProperty("id").GetString(),new{requiredResourceAccess=access},"Update application permission manifest",ct);
+        using var assignments=await Send(HttpMethod.Get,"servicePrincipals/"+principal+"/appRoleAssignments",null,"Read existing consent",ct);
+        var resourceId=resource.GetProperty("id").GetString();
+        if(!assignments.RootElement.GetProperty("value").EnumerateArray().Any(a=>a.GetProperty("resourceId").GetString()==resourceId&&a.GetProperty("appRoleId").GetString()==role))
+        { using var grant=await Send(HttpMethod.Post,"servicePrincipals/"+principal+"/appRoleAssignments",new{principalId=principal,resourceId,appRoleId=role},"Grant application consent",ct); }
+        progress.Report("Consent recorded. The service will verify app-only access; propagation may take several minutes.");
+    }
 }
