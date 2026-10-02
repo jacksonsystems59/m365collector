@@ -20,11 +20,13 @@ public class GuiTests
                 var tenant=Guid.NewGuid();store.SaveCustomer(new Customer(tenant,"Example Customer",Guid.NewGuid(),"fixture"){Identity=new(tenant,"Example Customer",[],DateTimeOffset.UtcNow)});
                 JsonFile.Write(temp.At("data/Cache/release-check.json"),new ReleaseCache(DateTimeOffset.UtcNow,null,null));
                 using var main=new MainForm(new Installation(temp.At("data"),temp.At("app"),true),store,new LocalUser("Administrator",LocalRole.Administrator));
+                new M365Collector.Security.LocalAccounts(store).CreateFirst("Example Administrator", "synthetic local password");
+                using var recovery=new RecoveryForm(store,new M365Collector.Security.AccountRecovery(store,()=>true,()=>"synthetic-windows-id"));Render(recovery,Path.Combine(screenshots,"recovery-v3.png"));
                 Render(main,Path.Combine(screenshots,"dashboard-v2.png"));
                 Render(main,Path.Combine(screenshots,"modules-v2.png"),()=>Find(main).OfType<Button>().Single(b=>b.Text=="Collection Modules").PerformClick());
                 Render(main,Path.Combine(screenshots,"explorer-v2.png"),()=>Find(main).OfType<Button>().Single(b=>b.Text=="Audit Explorer").PerformClick());
                 main.Height=760;main.PerformLayout();var version=Find(main).Single(c=>c.Name=="SidebarVersion");var lockControl=Find(main).Single(c=>c.Name=="SidebarLock");
-                Assert.Contains("0.0.2",version.Text);Assert.True(version.PointToScreen(Point.Empty).Y>main.PointToScreen(Point.Empty).Y+main.ClientSize.Height-100);Assert.True(lockControl.PointToScreen(Point.Empty).X<main.PointToScreen(Point.Empty).X+235);
+                Assert.Contains(Product.Version,version.Text);Assert.True(version.PointToScreen(Point.Empty).Y>main.PointToScreen(Point.Empty).Y+main.ClientSize.Height-100);Assert.True(lockControl.PointToScreen(Point.Empty).X<main.PointToScreen(Point.Empty).X+235);
             }
             catch(Exception e){error=e;}
         });thread.SetApartmentState(ApartmentState.STA);thread.Start();Assert.True(thread.Join(TimeSpan.FromSeconds(30)));Assert.Null(error);

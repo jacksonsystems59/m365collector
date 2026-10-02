@@ -5,10 +5,10 @@
     <RuntimeFrameworkVersion>10.0.12</RuntimeFrameworkVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.0.2</Version>
-    <AssemblyVersion>0.0.2.0</AssemblyVersion>
-    <FileVersion>0.0.2.0</FileVersion>
-    <InformationalVersion>0.0.2</InformationalVersion>
+    <Version>0.0.3</Version>
+    <AssemblyVersion>0.0.3.0</AssemblyVersion>
+    <FileVersion>0.0.3.0</FileVersion>
+    <InformationalVersion>0.0.3</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>M365Collector</Product>
     <Company>SterlingTech</Company>

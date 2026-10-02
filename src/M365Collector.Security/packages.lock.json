@@ -80,15 +80,15 @@
       "m365collector.core": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
+          "M365Collector.Contracts": "[0.0.3, )",
           "System.ServiceProcess.ServiceController": "[10.0.12, )"
         }
       },
       "m365collector.storage": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
-          "M365Collector.Core": "[0.0.1, )",
+          "M365Collector.Contracts": "[0.0.3, )",
+          "M365Collector.Core": "[0.0.3, )",
           "Microsoft.Data.Sqlite": "[10.0.12, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[3.0.5, )"
         }

@@ -13,6 +13,12 @@
           "System.ServiceProcess.ServiceController": "10.0.12"
         }
       },
+      "Microsoft.NET.ILLink.Tasks": {
+        "type": "Direct",
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "xi+BDjFpW+Sb+MHFHaH6Y/gV9I8BluFwRXc1QyCdoZbIK26eNiBeFuMTe/FMwc33G1wdHCyDg7CVTmb8OdQrMQ=="
+      },
       "Microsoft.Data.Sqlite": {
         "type": "Transitive",
         "resolved": "10.0.12",
@@ -396,15 +402,15 @@
       "m365collector.core": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
+          "M365Collector.Contracts": "[0.0.3, )",
           "System.ServiceProcess.ServiceController": "[10.0.12, )"
         }
       },
       "m365collector.entra": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
-          "M365Collector.Security": "[0.0.1, )",
+          "M365Collector.Contracts": "[0.0.3, )",
+          "M365Collector.Security": "[0.0.3, )",
           "Microsoft.Identity.Client": "[4.90.0, )",
           "Microsoft.Identity.Client.Broker": "[4.90.0, )"
         }
@@ -412,40 +418,40 @@
       "m365collector.modules.directorychanges": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Entra": "[0.0.1, )"
+          "M365Collector.Entra": "[0.0.3, )"
         }
       },
       "m365collector.modules.signinactivity": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Entra": "[0.0.1, )"
+          "M365Collector.Entra": "[0.0.3, )"
         }
       },
       "m365collector.modules.tenantidentity": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
-          "M365Collector.Entra": "[0.0.1, )"
+          "M365Collector.Contracts": "[0.0.3, )",
+          "M365Collector.Entra": "[0.0.3, )"
         }
       },
       "m365collector.modules.unifiedaudit": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Entra": "[0.0.1, )"
+          "M365Collector.Entra": "[0.0.3, )"
         }
       },
       "m365collector.security": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Storage": "[0.0.1, )",
+          "M365Collector.Storage": "[0.0.3, )",
           "System.IO.FileSystem.AccessControl": "[5.0.0, )"
         }
       },
       "m365collector.storage": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
-          "M365Collector.Core": "[0.0.1, )",
+          "M365Collector.Contracts": "[0.0.3, )",
+          "M365Collector.Core": "[0.0.3, )",
           "Microsoft.Data.Sqlite": "[10.0.12, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[3.0.5, )"
         }

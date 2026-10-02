@@ -42,3 +42,9 @@ Tests inject network/service/migration failures and verify database/config resto
 ## 0.0.1 to 0.0.2
 
 The release retains the GUI/Service/Updater package layout and checksum/manifest formats understood by 0.0.1. The service migrates schema 1 to 2 transactionally; updater backup/recovery preserves the prior database for rollback. New collector permissions are not granted by installing an update. The installed GUI shows LOCK and its version at bottom-left. See [live upgrade acceptance](COLLECTOR-MODULES.md#live-acceptance-checklist); automated package checks do not replace installed-service testing.
+
+## 0.0.3 distribution
+
+The primary download is a self-contained launcher EXE with an embedded, checksum-verified compatibility ZIP. Existing installed updaters still use the ZIP and SHA-256 assets with the same three component paths and manifest format. Each component is now a single EXE. The launcher can reset a local password before installing, and stages upgrades through the existing updater without requiring the forgotten local password. Explicit Install / upgrade & open is required; it never downgrades a newer installed version. Protected staging/backups remain for recovery. Schema remains 2.
+
+.NET single-file native libraries extract at runtime; see [Microsoft single-file deployment](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview). Verify native extraction/service identity and WAM in the [manual acceptance checklist](ACCOUNT-RECOVERY.md#manual-acceptance).

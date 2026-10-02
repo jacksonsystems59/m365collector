@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>WinExe</OutputType><UseWindowsForms>true</UseWindowsForms><ApplicationManifest>../M365Collector.GUI/app.manifest</ApplicationManifest><ApplicationIcon>../../assets/icons/application.ico</ApplicationIcon></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../M365Collector.Security/M365Collector.Security.csproj" />
+    <Compile Include="../M365Collector.GUI/Ui.cs" Link="Ui.cs" />
+    <Compile Include="../M365Collector.GUI/RecoveryForm.cs" Link="RecoveryForm.cs" />
+    <Compile Include="../M365Collector.GUI/AppIcons.cs" Link="AppIcons.cs" />
+    <EmbeddedResource Include="../../assets/icons/*.png" LogicalName="Icons.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../assets/icons/application.ico" LogicalName="Icons.application.ico" />
+    <EmbeddedResource Include="$(BundleZip)" LogicalName="Bundle.zip" Condition="'$(BundleZip)' != ''" />
+    <EmbeddedResource Include="$(BundleZip).sha256" LogicalName="Bundle.sha256" Condition="'$(BundleZip)' != ''" />
+  </ItemGroup>
+</Project>

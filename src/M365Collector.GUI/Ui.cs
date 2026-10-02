@@ -7,6 +7,7 @@ internal static class Ui
     public static readonly Color Ink = Color.FromArgb(27, 42, 63), Accent = Color.FromArgb(0, 103, 145);
     public static void Style(Form form, string title, int width = 1060, int height = 760)
     {
+        form.Icon = AppIcons.ApplicationIcon;
         form.Text = title; form.Font = new Font("Segoe UI", 10); form.BackColor = Color.White; form.ForeColor = Ink; form.Size = new Size(width, height); form.MinimumSize = new Size(760, 600); form.StartPosition = FormStartPosition.CenterScreen; form.AutoScaleMode = AutoScaleMode.Dpi;
     }
     public static FlowLayoutPanel Stack() => new() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(24) };
@@ -17,7 +18,7 @@ internal static class Ui
     }
     public static Button Button(string text, Action action)
     {
-        var button = new Button { Text = text, AutoSize = true, MinimumSize = new Size(130, 38), FlatStyle = FlatStyle.Flat, BackColor = Accent, ForeColor = Color.White, Padding = new Padding(8, 3, 8, 3), Margin = new Padding(0, 0, 12, 12) }; button.Click += (_, _) => action(); return button;
+        var button = new Button { Text = text, Image = AppIcons.ForAction(text), ImageAlign = ContentAlignment.MiddleLeft, TextImageRelation = TextImageRelation.ImageBeforeText, AutoSize = true, MinimumSize = new Size(130, 38), FlatStyle = FlatStyle.Flat, BackColor = Accent, ForeColor = Color.White, Padding = new Padding(8, 3, 8, 3), Margin = new Padding(0, 0, 12, 12) }; button.Click += (_, _) => action(); return button;
     }
     public static Button AsyncButton(string text, Func<Task> action, Label status)
     {
@@ -39,5 +40,6 @@ internal sealed class LoginForm : Form
         var name = Ui.Field(panel, "Local username"); var password = Ui.Field(panel, "Local password", true); var status = Ui.Text("");
         var login = Ui.AsyncButton("Sign in", async () => { User = await Task.Run(() => new LocalAccounts(store).Login(name.Text, password.Text)); password.Clear(); if (User == null) { status.Text = "Sign-in failed or account is temporarily locked. After five failures, wait 15 minutes."; return; } DialogResult = DialogResult.OK; Close(); }, status);
         panel.Controls.Add(login); panel.Controls.Add(status); AcceptButton = login;
+        panel.Controls.Add(Ui.AsyncButton("Forgot local login?", () => { using var recovery = new RecoveryForm(store); recovery.ShowDialog(this); return Task.CompletedTask; }, status));
     }
 }

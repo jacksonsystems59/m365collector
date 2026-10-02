@@ -1,8 +1,6 @@
 using M365Collector.Core;
 using M365Collector.Storage;
 namespace M365Collector.Updater;
-public sealed record UpdateRequest(string Zip, string Checksum, string TargetVersion, string PreviousVersion, int GuiProcessId);
-public sealed record UpdateJournal(string State, string TargetVersion, string PreviousVersion);
 public sealed class UpdateTransaction(Installation installation, string work, IServiceControl service, Func<CancellationToken, Task> migrate)
 {
     private readonly RuntimePaths paths = new(installation.DataRoot);

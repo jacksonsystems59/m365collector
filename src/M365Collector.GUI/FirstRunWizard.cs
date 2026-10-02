@@ -13,7 +13,7 @@ internal sealed class FirstRunWizard : Form
     private TextBox? data, username, password, confirm;
     public FirstRunWizard()
     {
-        Ui.Style(this, "M365Collector 0.0.2 • First Run Wizard");
+        Ui.Style(this, "M365Collector 0.0.3 • First Run Wizard");
         if (File.Exists(InstallationState.Locator)) dataRoot = JsonFile.Read<Installation>(InstallationState.Locator).DataRoot;
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 70, Padding = new Padding(24, 10, 24, 10), FlowDirection = FlowDirection.RightToLeft };
         next = Ui.Button("Next →", async () => await Advance()); back = Ui.Button("← Back", () => { step--; Render(); }); cancel = Ui.Button("Cancel", () => Close());

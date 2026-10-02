@@ -51,3 +51,7 @@ Local roles apply within the GUI; Windows administrators are the machine trust b
 ## 0.0.2 collection architecture
 
 Schema 2 adds AuditEvents, CollectorRuns, ModuleHealth, CollectorCheckpoints and ProcessedAuditContent. Tenant/module/provider ID keys isolate and deduplicate records. A bounded four-job scheduler runs independent collectors; page commits precede checkpoint advancement. SQLite WAL supports concurrent collection and snapshot CSV reads. Module cards and Audit Explorer use the local store. See [collector details](COLLECTOR-MODULES.md).
+
+## 0.0.3 packaging and recovery
+
+Launcher embeds the update ZIP after publishing the three single-file components, preventing a circular bundle dependency. Core owns the stable update request/journal DTOs. The launcher links the common login/recovery/icon UI and depends on Security/Storage/Core, not executable projects. AccountRecovery enforces Windows elevation independently of local roles and resets an existing hash/lockout with an atomic audit entry. Native libraries use .NET bundle extraction; customer runtime data remains external.

@@ -29,3 +29,7 @@ Do not put credentials, private keys or customer data in public GitHub issues. A
 ## Audit data in 0.0.2
 
 Audit records include identity, IP, location and original Microsoft JSON. Existing DataRoot ACLs protect SQLite and backups; exports are technician-selected files requiring their own protection. JSON is displayed as text. CSV neutralizes spreadsheet formulas. API continuation URLs are restricted to expected Microsoft endpoints and customer feed paths. Additional application consent is explicitly reviewed and uses the existing customer app/certificate. Retention deletion is off by default and requires Administrator opt-in.
+
+## 0.0.3 account recovery
+
+A Windows administrator can list local usernames and reset an existing password through the launcher or login screen. Both list/reset operations enforce Windows elevation. Reset preserves role and records the actor SID/account/time transactionally without password text. Windows administrators are trusted machine owners; ordinary Windows users are not given a recovery bypass. See [account recovery](ACCOUNT-RECOVERY.md).

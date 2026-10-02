@@ -3,7 +3,6 @@ using M365Collector.Core;
 using M365Collector.Modules.TenantIdentity;
 using M365Collector.Security;
 using M365Collector.Storage;
-using M365Collector.Updater;
 using System.Diagnostics;
 namespace M365Collector.GUI;
 internal sealed partial class MainForm : Form

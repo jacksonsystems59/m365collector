@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.3 — 2026-10-02
+
+- Added Windows-administrator local account recovery to the launcher and login/lock screen, preserving roles and customer data with atomic audit recording.
+- Added a self-contained single-executable installer/launcher and single-file GUI, Service and Updater components. Retained the compatible updater ZIP and rollback flow.
+- Added original multi-size application ICO and 16 SVG/PNG navigation/action icons, integrated into the interface.
+- Moved updater request models into Core without changing their serialized format, removing executable dependencies from GUI/launcher packaging.
+- Added recovery authorization, lockout, validation and audit tests plus native SQLite single-file runtime diagnostics.
+
 ## 0.0.2 — 2026-09-30
 
 - Added Sign-in Activity, Directory Changes and Microsoft 365 Unified Audit with pagination, bounded retries, checkpoints and tenant-scoped deduplication.

@@ -1,12 +1,12 @@
-# M365Collector 0.0.2
+# M365Collector 0.0.3
 
 Clean foundation rebuild of the SterlingTech Microsoft 365 collection platform for MSP technicians. This source replaces the abandoned prototype. Git history and repository identity are retained.
 
 ## Start from the portable release
 
-1. Download `M365Collector-0.0.2-win-x64.zip` and its `.sha256` companion from [GitHub Releases](https://github.com/jacksonsystems59/m365collector/releases).
-2. Verify the ZIP using `Get-FileHash -Algorithm SHA256`, then extract the complete package to a local folder.
-3. Run `GUI\M365Collector.GUI.exe`. Windows requests administrator elevation. No separately installed .NET runtime, GitHub CLI, PAT or GitHub account is required.
+1. Download `M365Collector-0.0.3-win-x64.exe` and its `.sha256` companion from [GitHub Releases](https://github.com/jacksonsystems59/m365collector/releases).
+2. Verify the executable using `Get-FileHash -Algorithm SHA256`. No extraction is required.
+3. Run the downloaded executable and select Install / upgrade & open. Windows requests administrator elevation. No separately installed .NET runtime, GitHub CLI, PAT or GitHub account is required. If you forgot your existing login, select Reset local password first.
 4. Follow the First Run Wizard: requirements, connectivity, dedicated DataRoot, runtime folders, service installation, local Administrator, verification, first customer.
 5. After setup, use `C:\Program Files\M365Collector\GUI\M365Collector.GUI.exe`. The extracted download can be archived. Updates replace the installed copy; do not keep launching an old extracted GUI.
 
@@ -50,11 +50,18 @@ On Windows with the .NET 10 SDK and PowerShell 7:
 
 This cleans, restores locked dependencies, builds Release with warnings treated as errors, runs all tests, publishes GUI/Service/Updater as self-contained win-x64 components and writes:
 
-- `dist\M365Collector-0.0.2-win-x64.zip`
-- `dist\M365Collector-0.0.2-win-x64.zip.sha256`
+- `dist\M365Collector-0.0.3-win-x64.zip`
+- `dist\M365Collector-0.0.3-win-x64.zip.sha256`
 
 Generated binaries, packages, runtime databases, certificates and test output are excluded from Git. `gh` is used only by maintainers to publish releases, never by deployed installations.
 
 Automated tests use isolated local databases and fake Microsoft/GitHub/service operations. They do not require tenant credentials or modify the existing Windows Service. Actual WAM, customer-specific Conditional Access/consent, machine-key service access and end-to-end SCM installation should also be validated in a disposable Windows test environment before production rollout; automated tests are not evidence of a live tenant connection.
 
 See [architecture](docs/ARCHITECTURE.md), [security](docs/SECURITY.md), [updates](docs/UPDATES.md) and [changelog](CHANGELOG.md).
+
+
+## Single executable and forgotten login
+
+The primary download is one self-contained EXE. It unpacks protected installation components so the background service and updater can run independently. The release also includes a compatibility ZIP for older updaters and an SVG/PNG/ICO icon pack. See [account recovery](docs/ACCOUNT-RECOVERY.md). Passwords remain one-way salted hashes; Windows administrators can reset an existing account without deleting customer data.
+
+The release script additionally produces M365Collector-0.0.3-win-x64.exe, its SHA-256 companion and M365Collector-0.0.3-icons.zip.

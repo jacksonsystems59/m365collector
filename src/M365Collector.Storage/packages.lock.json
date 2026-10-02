@@ -76,7 +76,7 @@
       "m365collector.core": {
         "type": "Project",
         "dependencies": {
-          "M365Collector.Contracts": "[0.0.1, )",
+          "M365Collector.Contracts": "[0.0.3, )",
           "System.ServiceProcess.ServiceController": "[10.0.12, )"
         }
       }

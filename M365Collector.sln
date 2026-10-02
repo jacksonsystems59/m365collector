@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M365Collector.Modules.Direc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M365Collector.Modules.UnifiedAudit", "src\M365Collector.Modules.UnifiedAudit\M365Collector.Modules.UnifiedAudit.csproj", "{C16A1738-E3E8-4CC7-A469-7B80580E5546}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M365Collector.Launcher", "src\M365Collector.Launcher\M365Collector.Launcher.csproj", "{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -199,6 +201,18 @@ Global
 		{C16A1738-E3E8-4CC7-A469-7B80580E5546}.Release|x64.Build.0 = Release|Any CPU
 		{C16A1738-E3E8-4CC7-A469-7B80580E5546}.Release|x86.ActiveCfg = Release|Any CPU
 		{C16A1738-E3E8-4CC7-A469-7B80580E5546}.Release|x86.Build.0 = Release|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Debug|x64.Build.0 = Debug|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Debug|x86.Build.0 = Debug|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Release|x64.ActiveCfg = Release|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Release|x64.Build.0 = Release|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Release|x86.ActiveCfg = Release|Any CPU
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -217,5 +231,6 @@ Global
 		{7DF4DB31-8FF1-4CE1-A7AB-061D9FECDF77} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{5F8E677E-1A68-42B0-8740-EC680B81BFBD} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C16A1738-E3E8-4CC7-A469-7B80580E5546} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{35D52470-C299-42BD-BAC8-3AB21EA3D0BF} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
